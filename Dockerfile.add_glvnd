@@ -1,0 +1,47 @@
+### For using nvidia opengl with nvidia-docker
+## osrf/ros:melodic-desktop / ros:melodic-robot
+## melodic/noetic
+## docker build . --pull -f Dockerfile.add_glvnd --build-arg BASE_IMAGE=ros:melodic-robot -t build_temp/add_glvnd:melodic
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+LABEL maintainer "IRSL-tut (https://github.com/IRSL-tut) <faculty@irsl.eiiris.tut.ac.jp>"
+
+SHELL ["/bin/bash", "-c"]
+ENV DEBIAN_FRONTEND=noninteractive
+
+### setup(change) timezone ???
+RUN echo 'Asia/Tokyo' > /etc/timezone && \
+    ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && \
+    apt-get update -q -qq && \
+    apt-get install -q -qq -y --no-install-recommends tzdata && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update -q -qq && apt-get install -q -qq -y --no-install-recommends \
+        libxau6   \
+        libxdmcp6 \
+        libxcb1   \
+        libxext6  \
+        libx11-6  && \
+    rm -rf /var/lib/apt/lists/*
+
+### set default environment variables
+ENV NVIDIA_VISIBLE_DEVICES \
+        ${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES \
+        ${NVIDIA_DRIVER_CAPABILITIES:-all}
+
+###
+RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
+    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
+    
+ENV LD_LIBRARY_PATH /usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
+
+###
+RUN apt-get update -q -qq && apt-get install -q -qq -y --no-install-recommends \
+        libglvnd0 \
+        libgl1    \
+        libglx0   \
+        libegl1   \
+        libgles2  && \
+    rm -rf /var/lib/apt/lists/*
