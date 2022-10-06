@@ -1,6 +1,8 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
+LABEL maintainer "IRSL-tut (https://github.com/IRSL-tut) <faculty@irsl.eiiris.tut.ac.jp>"
+
 RUN mkdir -p /ros_home/log && chmod a+rwx /ros_home && chmod a+rwx /ros_home/log
 
 RUN echo -e '#!/bin/bash\n\
