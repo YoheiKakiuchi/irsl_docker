@@ -1,0 +1,53 @@
+name: BuildBase
+run-name: ${{ github.actor }} is building base image
+#
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 2 * * 2,6'
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        #ubuntu: [18.04, 20.04]
+        ubuntu: [ 18.04, 20.04 ]
+    runs-on: self-hosted
+    env:
+      IMAGE_NAME: irsl_base
+#      DOCKER_LOCAL: ghcr.io/
+#      DOCKER_LOCAL: repo.irsl.eiiris.tut.ac.jp/
+      DOCKER_DEPLOY: repo.irsl.eiiris.tut.ac.jp/
+    steps:
+      - name: Check Version
+        run: |
+          if   [ ${{ matrix.ubuntu }} == 22.04 ]; then
+            echo "ROS_DISTRO=noetic" >> $GITHUB_ENV
+          elif [ ${{ matrix.ubuntu }} == 20.04 ]; then
+            echo "ROS_DISTRO=noetic" >> $GITHUB_ENV
+          elif [ ${{ matrix.ubuntu }} == 18.04 ]; then
+            echo "ROS_DISTRO=melodic" >> $GITHUB_ENV
+          else
+            echo "ROS_DISTRO=none" >> $GITHUB_ENV
+          fi
+      - name: Check out repository code(src)
+        uses: actions/checkout@v3
+      - name: Check Build 1st
+        run: >
+          docker build . -f Dockerfile.add_glvnd --pull
+          --build-arg BASE_IMAGE=ros:${{ env.ROS_DISTRO }}-ros-base
+          -t build_temp/add_glvnd:${{ env.ROS_DISTRO }}
+      - name: Check Build 2nd
+        run: >
+          docker build . -f Dockerfile.add_virtualgl
+          --build-arg BASE_IMAGE=build_temp/add_glvnd:${{ env.ROS_DISTRO }}
+          -t build_temp/add_virtualgl:${{ env.ROS_DISTRO }}
+      - name: Check Build last
+        run: >
+          docker build . -f Dockerfile.add_entrypoint
+          --build-arg BASE_IMAGE=build_temp/add_virtualgl:${{ env.ROS_DISTRO }}
+          -t build_temp/add_entry:${{ env.ROS_DISTRO }}
+      - name: Deploy
+        run: |
+          docker tag build_temp/add_entry:${{ env.ROS_DISTRO }} ${{ env.DOCKER_DEPLOY }}${{ env.IMAGE_NAME }}:${{ env.ROS_DISTRO }}_nvidia
+          docker push ${{ env.DOCKER_DEPLOY }}${{ env.IMAGE_NAME }}:${{ env.ROS_DISTRO }}_nvidia
