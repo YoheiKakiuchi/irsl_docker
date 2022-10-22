@@ -14,7 +14,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN echo 'Asia/Tokyo' > /etc/timezone && \
     ln -sf /usr/share/zoneinfo/Asia/Tokyo /etc/localtime && \
     apt-get update -q -qq && \
-    apt-get install -q -qq -y --no-install-recommends tzdata && \
+    apt-get install -q -qq -y --no-install-recommends tzdata sudo && \
     rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update -q -qq && apt-get install -q -qq -y --no-install-recommends \
