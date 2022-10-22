@@ -3,6 +3,10 @@ run-name: ${{ github.actor }} is building base image
 #
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]  
   schedule:
     - cron: '30 2 * * 2,6'
 jobs:
@@ -36,18 +40,19 @@ jobs:
         run: >
           docker build . -f Dockerfile.add_glvnd --pull
           --build-arg BASE_IMAGE=ros:${{ env.ROS_DISTRO }}-ros-base
-          -t build_temp/add_glvnd:${{ env.ROS_DISTRO }}
+          -t actions/add_glvnd:${{ env.ROS_DISTRO }}
       - name: Check Build 2nd
         run: >
           docker build . -f Dockerfile.add_virtualgl
-          --build-arg BASE_IMAGE=build_temp/add_glvnd:${{ env.ROS_DISTRO }}
-          -t build_temp/add_virtualgl:${{ env.ROS_DISTRO }}
+          --build-arg BASE_IMAGE=actions/add_glvnd:${{ env.ROS_DISTRO }}
+          -t actions/add_virtualgl:${{ env.ROS_DISTRO }}
       - name: Check Build last
         run: >
           docker build . -f Dockerfile.add_entrypoint
-          --build-arg BASE_IMAGE=build_temp/add_virtualgl:${{ env.ROS_DISTRO }}
-          -t build_temp/add_entry:${{ env.ROS_DISTRO }}
+          --build-arg BASE_IMAGE=actions/add_virtualgl:${{ env.ROS_DISTRO }}
+          -t actions/add_entry:${{ env.ROS_DISTRO }}
       - name: Deploy
+        if: ${{ github.event_name != 'pull_request' }}
         run: |
-          docker tag build_temp/add_entry:${{ env.ROS_DISTRO }} ${{ env.DOCKER_DEPLOY }}${{ env.IMAGE_NAME }}:${{ env.ROS_DISTRO }}_nvidia
+          docker tag actions/add_entry:${{ env.ROS_DISTRO }} ${{ env.DOCKER_DEPLOY }}${{ env.IMAGE_NAME }}:${{ env.ROS_DISTRO }}_nvidia
           docker push ${{ env.DOCKER_DEPLOY }}${{ env.IMAGE_NAME }}:${{ env.ROS_DISTRO }}_nvidia
