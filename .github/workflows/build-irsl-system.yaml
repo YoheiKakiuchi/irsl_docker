@@ -1,0 +1,62 @@
+name: Build IRSL system
+#run-name: ${{ github.actor }} is building base image
+#
+on:
+  workflow_dispatch:
+    inputs:
+      event_type:
+        required: false
+        default: 'default'
+        type: string
+      source:
+        required: false
+        default: 'default'
+        type: string
+      hash:
+        required: false
+        default: 'default'
+        type: string
+  push:
+    branches: [choreonoid_system]
+  pull_request:
+    branches: [choreonoid_system]
+#  schedule:
+#    - cron: '30 2 * * 2,6'
+## source
+### jupyter_plugin
+### robot_assembler_plugin
+### irsl_choreonoid
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        #ubuntu: [18.04, 20.04, 22.04]
+        ubuntu: [ 18.04, 20.04 ]
+    runs-on: self-hosted
+    env:
+      IMAGE_NAME: irsl_base
+      DOCKER_DEPLOY: repo.irsl.eiiris.tut.ac.jp/
+    steps:
+      - name: Check Version
+        run: |
+          if   [ ${{ matrix.ubuntu }} == 22.04 ]; then
+            echo "ROS_DISTRO=noetic" >> $GITHUB_ENV
+          elif [ ${{ matrix.ubuntu }} == 20.04 ]; then
+            echo "ROS_DISTRO=noetic" >> $GITHUB_ENV
+          elif [ ${{ matrix.ubuntu }} == 18.04 ]; then
+            echo "ROS_DISTRO=melodic" >> $GITHUB_ENV
+          else
+            echo "ROS_DISTRO=none" >> $GITHUB_ENV
+          fi
+      - name: Check out repository code(src)
+        uses: actions/checkout@v3
+        with:
+          ref: 'choreonoid_system'
+      - name: Build
+        run: ./build.sh
+#      - name: Deploy
+#        if: ${{ github.event_name != 'pull_request' }}
+#        run: |
+#          docker tag actions/add_entry:${{ env.ROS_DISTRO }} ${{ env.DOCKER_DEPLOY }}${{ env.IMAGE_NAME }}:${{ env.ROS_DISTRO }}_nvidia
+#          docker push ${{ env.DOCKER_DEPLOY }}${{ env.IMAGE_NAME }}:${{ env.ROS_DISTRO }}_nvidia
